@@ -1,10 +1,19 @@
-# This is my package dusha
+# No-build asset management for Laravel
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/massaal-com/dusha.svg?style=flat-square)](https://packagist.org/packages/massaal-com/dusha)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/massaal-com/dusha/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/massaal-com/dusha/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/massaal-com/dusha.svg?style=flat-square)](https://packagist.org/packages/massaal-com/dusha)
 
-No-build asset management for Laravel
+> [!WARNING]
+> This package is currently in development.
+> The API is subject to change until a stable release.
+
+Dusha provides simple asset management for Laravel without requiring Node.js, Webpack, or Vite. It copies your assets to the public directory with content-based hashes for cache-busting, so browsers always load the latest version after updates.
+
+```blade
+<link rel="stylesheet" href="{{ dusha('css/app.css') }}">
+<!-- Outputs: /assets/css/app-a1b2c3d4.css -->
+```
 
 ## Installation
 
@@ -67,9 +76,52 @@ return [
 
 ## Usage
 
-```php
-$dusha = new Massaal\Dusha();
-echo $dusha->echoPhrase('Hello, Massaal!');
+### Compiling Assets
+
+Place your assets in the source directory (default: `resources/assets/`) organized by type:
+
+```
+resources/assets/
+├── css/
+│   └── app.css
+├── js/
+│   └── app.js
+├── images/
+│   └── logo.png
+└── fonts/
+    └── custom.woff2
+```
+
+Compile your assets using the Artisan command:
+
+```bash
+php artisan dusha:compile
+```
+
+This will:
+
+- Copy assets to `public/assets/`
+- Add content-based hashes for cache-busting (e.g., `app-a1b2c3d4.css`)
+- Generate a `.manifest.json` file for path resolution
+
+### Including Assets in Views
+
+Use the `dusha()` helper function in your Blade templates:
+
+```blade
+<link rel="stylesheet" href="{{ dusha('css/app.css') }}">
+<script src="{{ dusha('js/app.js') }}"></script>
+<img src="{{ dusha('images/logo.png') }}" alt="Logo">
+```
+
+The helper automatically resolves the hashed filename from the manifest.
+
+### Clearing Compiled Assets
+
+To remove all compiled assets:
+
+```bash
+php artisan dusha:clear
 ```
 
 ## Testing
