@@ -39,9 +39,4 @@ return [
      * Length of digest hash (default: 8)
      */
     "digest_length" => 8,
-
-    /*
-     * Enable CSS URL rewriting
-     */
-    "rewrite_css_urls" => true,
 ];

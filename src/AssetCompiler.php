@@ -62,7 +62,7 @@ class AssetCompiler
     protected function digest(SplFileInfo $file): string
     {
         $content = File::get($file);
-        $hash = substr(md5($content), 0, 8);
+        $hash = substr(md5($content), 0, config("dusha.digest_length"));
 
         $name = str($file->getFilename())
             ->beforeLast(".")
