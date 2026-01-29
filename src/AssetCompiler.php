@@ -8,17 +8,31 @@ use SplFileInfo;
 
 class AssetCompiler
 {
+    private Collection $manifest;
+
     public function compile(): int
     {
         $this->ensureOutputDirectory();
 
         $files = $this->getAssetFiles();
 
-        $manifest = $files->mapWithKeys(function (SplFileInfo $file) {
+        [$css_files, $other_files] = $files->partition(
+            fn(SplFileInfo $file) => $file->getExtension() === "css",
+        );
+
+        $this->manifest = $other_files->mapWithKeys(function (
+            SplFileInfo $file,
+        ) {
             return [$this->relativePath($file) => $this->digest($file)];
         });
 
-        $this->writeManifest($manifest);
+        $css_manifest = $css_files->mapWithKeys(function (SplFileInfo $file) {
+            return [
+                $this->relativePath($file) => $this->digestCss($file),
+            ];
+        });
+
+        $this->writeManifest($css_manifest);
 
         return $files->count();
     }
@@ -77,11 +91,74 @@ class AssetCompiler
         return "/" . config("dusha.output_path") . "/" . $name;
     }
 
-    protected function writeManifest(Collection $manifest): void
+    protected function digestCss(SplFileInfo $file): string
     {
+        $content = File::get($file);
+
+        if (config("dusha.css_url_rewriting")) {
+            $css_directory = dirname($this->relativePath($file));
+            $content = preg_replace_callback(
+                '/url\(\s*["\']?(?!(?:data:|https?:|\/\/|\/))([^"\')\s]+)["\']?\s*\)/i',
+                fn(array $matches) => $this->rewriteUrl(
+                    $matches,
+                    $css_directory,
+                ),
+                $content,
+            );
+        }
+
+        // todo: extract duplicate code
+        $hash = substr(md5($content), 0, config("dusha.digest_length"));
+
+        $name = str($file->getFilename())
+            ->beforeLast(".")
+            ->append("-", $hash, ".", $file->getExtension())
+            ->toString();
+
+        File::put(
+            public_path(config("dusha.output_path")) . "/" . $name,
+            $content,
+        );
+
+        return "/" . config("dusha.output_path") . "/" . $name;
+    }
+
+    private function rewriteUrl(array $matches, string $css_directory): string
+    {
+        $resolved_path = $this->resolvePath($matches[1], $css_directory);
+
+        $manifest = $this->manifest->toArray();
+        if (isset($manifest[$resolved_path])) {
+            return 'url("' . $this->manifest[$resolved_path] . '")';
+        }
+
+        return $matches[0];
+    }
+
+    private function resolvePath(string $url, string $css_directory): string
+    {
+        $url = preg_replace("/^\.\//", "", $url);
+        $parts = explode("/", $css_directory . "/" . $url);
+        $normalized = [];
+
+        foreach ($parts as $part) {
+            if ($part === "..") {
+                array_pop($normalized);
+            } elseif ($part !== "." && $part !== "") {
+                $normalized[] = $part;
+            }
+        }
+
+        return implode("/", $normalized);
+    }
+
+    protected function writeManifest(Collection $css_manifest): void
+    {
+        $this->manifest = $this->manifest->merge($css_manifest);
+
         File::put(
             public_path(config("dusha.output_path")) . "/.manifest.json",
-            $manifest->toPrettyJson(),
+            $this->manifest->toPrettyJson(),
         );
     }
 }
