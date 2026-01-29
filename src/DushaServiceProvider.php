@@ -20,4 +20,9 @@ class DushaServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasCommand(CompileCommand::class);
     }
+
+    public function packageRegistered()
+    {
+        require_once __DIR__ . "/helpers.php";
+    }
 }

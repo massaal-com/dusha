@@ -13,9 +13,9 @@ class CompileCommand extends Command
 
     public function handle(AssetCompiler $compiler): int
     {
-        $compiler->compile();
+        $count = $compiler->compile();
 
-        $this->comment("All done");
+        $this->comment("Compiled {$count} assets");
 
         return self::SUCCESS;
     }

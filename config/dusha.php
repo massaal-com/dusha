@@ -7,7 +7,7 @@ return [
     "source_path" => "resources/assets",
 
     /*
-     * Target directory for compiled assets (relative to base_path)
+     * Target directory for compiled assets (relative to public_path)
      */
     "output_path" => "assets",
 
@@ -19,7 +19,21 @@ return [
     /*
      * File extensions to process
      */
-    "extensions" => ["css", "js"],
+    "extensions" => [
+        "css",
+        "js",
+        "jpg",
+        "jpeg",
+        "png",
+        "gif",
+        "svg",
+        "webp",
+        "woff",
+        "woff2",
+        "ttf",
+        "eot",
+        "otf",
+    ],
 
     /*
      * Length of digest hash (default: 8)
