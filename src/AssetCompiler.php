@@ -4,6 +4,7 @@ namespace Massaal\Dusha;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Collection;
+use Massaal\Dusha\Compilers\CssUrlCompiler;
 use SplFileInfo;
 
 class AssetCompiler
@@ -13,7 +14,6 @@ class AssetCompiler
     public function compile(): int
     {
         $this->ensureOutputDirectory();
-
         $files = $this->getAssetFiles();
 
         [$css_files, $other_files] = $files->partition(
@@ -26,15 +26,80 @@ class AssetCompiler
             return [$this->relativePath($file) => $this->digest($file)];
         });
 
-        $css_manifest = $css_files->mapWithKeys(function (SplFileInfo $file) {
-            return [
-                $this->relativePath($file) => $this->digestCss($file),
-            ];
-        });
+        $css_manifest = $this->compileCssFiles($css_files);
 
         $this->writeManifest($css_manifest);
 
         return $files->count();
+    }
+
+    protected function compileCssFiles(Collection $css_files): Collection
+    {
+        // dependency graph
+        $graph = [];
+        foreach ($css_files as $file) {
+            $path = $this->relativePath($file);
+            $content = File::get($file);
+            $compiler = new CssUrlCompiler(collect());
+            $graph[$path] = $compiler->references($content, $path);
+        }
+
+        $sorted = $this->topologicalSort($graph);
+
+        $css_manifest = collect();
+        $css_by_path = $css_files->keyBy(fn($f) => $this->relativePath($f));
+
+        foreach ($sorted as $path) {
+            if (!isset($css_by_path[$path])) {
+                continue;
+            }
+
+            $compiler = new CssUrlCompiler(
+                $this->manifest->merge($css_manifest),
+            );
+            $hashed_path = $this->digestCss($css_by_path[$path], $compiler);
+            $css_manifest->put($path, $hashed_path);
+        }
+
+        return $css_manifest;
+    }
+
+    protected function topologicalSort(array $graph): array
+    {
+        $sorted = [];
+        $visited = [];
+        $visiting = [];
+
+        $visit = function ($node) use (
+            &$visit,
+            &$sorted,
+            &$visited,
+            &$visiting,
+            $graph,
+        ) {
+            if (isset($visited[$node])) {
+                return;
+            }
+            if (isset($visiting[$node])) {
+                throw new \RuntimeException("Circular CSS dependency: $node");
+            }
+
+            $visiting[$node] = true;
+            foreach ($graph[$node] ?? [] as $dep) {
+                if (isset($graph[$dep])) {
+                    $visit($dep);
+                }
+            }
+            unset($visiting[$node]);
+            $visited[$node] = true;
+            $sorted[] = $node;
+        };
+
+        foreach (array_keys($graph) as $node) {
+            $visit($node);
+        }
+
+        return $sorted;
     }
 
     protected function ensureOutputDirectory(): void
@@ -91,20 +156,14 @@ class AssetCompiler
         return "/" . config("dusha.output_path") . "/" . $name;
     }
 
-    protected function digestCss(SplFileInfo $file): string
-    {
+    protected function digestCss(
+        SplFileInfo $file,
+        CssUrlCompiler $compiler,
+    ): string {
         $content = File::get($file);
 
         if (config("dusha.css_url_rewriting")) {
-            $css_directory = dirname($this->relativePath($file));
-            $content = preg_replace_callback(
-                '/url\(\s*["\']?(?!(?:data:|https?:|\/\/|\/))([^"\')\s]+)["\']?\s*\)/i',
-                fn(array $matches) => $this->rewriteUrl(
-                    $matches,
-                    $css_directory,
-                ),
-                $content,
-            );
+            $content = $compiler->compile($content, $this->relativePath($file));
         }
 
         // todo: extract duplicate code
@@ -123,33 +182,20 @@ class AssetCompiler
         return "/" . config("dusha.output_path") . "/" . $name;
     }
 
-    private function rewriteUrl(array $matches, string $css_directory): string
-    {
-        $resolved_path = $this->resolvePath($matches[1], $css_directory);
+    protected function cssAssetsUrls(
+        string $content,
+        string $css_directory,
+    ): array {
+        preg_match_all(
+            '/url\(\s*["\']?(?!(?:data:|https?:|\/\/|\/))([^"\')\s]+)["\']?\s*\)/i',
+            $content,
+            $matches,
+        );
 
-        $manifest = $this->manifest->toArray();
-        if (isset($manifest[$resolved_path])) {
-            return 'url("' . $manifest[$resolved_path] . '")';
-        }
-
-        return $matches[0];
-    }
-
-    private function resolvePath(string $url, string $css_directory): string
-    {
-        $url = preg_replace("/^\.\//", "", $url);
-        $parts = explode("/", $css_directory . "/" . $url);
-        $normalized = [];
-
-        foreach ($parts as $part) {
-            if ($part === "..") {
-                array_pop($normalized);
-            } elseif ($part !== "." && $part !== "") {
-                $normalized[] = $part;
-            }
-        }
-
-        return implode("/", $normalized);
+        return collect($matches[1])
+            ->map(fn($url) => $this->resolvePath($url, $css_directory))
+            ->values()
+            ->all();
     }
 
     protected function writeManifest(Collection $css_manifest): void
