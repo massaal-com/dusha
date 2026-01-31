@@ -15,7 +15,7 @@ class CompileCommand extends Command
     {
         $count = $compiler->compile();
 
-        $this->comment("Compiled {$count} assets");
+        $this->info("Compiled {$count} assets");
 
         return self::SUCCESS;
     }

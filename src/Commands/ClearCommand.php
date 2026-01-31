@@ -17,7 +17,7 @@ class ClearCommand extends Command
 
         if (File::exists($output_path)) {
             File::deleteDirectory($output_path);
-            $this->comment("Cleared compiled assets");
+            $this->info("Cleared compiled assets");
             return self::SUCCESS;
         }
 

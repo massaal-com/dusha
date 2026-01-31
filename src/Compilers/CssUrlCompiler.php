@@ -6,9 +6,9 @@ class CssUrlCompiler extends Compiler
 {
     private const string URL_PATTERN = '/url\(\s*["\']?(?!(?:data:|https?:|\/\/|\/))([^"\')\s]+)["\']?\s*\)/i';
 
-    public function compile(string $content, string $file_path): string
+    public function compile(string $content, string $filePath): string
     {
-        $directory = dirname($file_path);
+        $directory = dirname($filePath);
 
         return preg_replace_callback(
             self::URL_PATTERN,
@@ -17,9 +17,9 @@ class CssUrlCompiler extends Compiler
         );
     }
 
-    public function references(string $content, string $file_path): array
+    public function references(string $content, string $filePath): array
     {
-        $directory = dirname($file_path);
+        $directory = dirname($filePath);
 
         preg_match_all(self::URL_PATTERN, $content, $matches);
 
