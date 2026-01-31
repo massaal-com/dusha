@@ -21,6 +21,14 @@ if (!function_exists("dusha")) {
     {
         $manifest = dusha_manifest();
 
+        if (empty($manifest)) {
+            $source = base_path($path);
+
+            $mtime = file_exists($source) ? filemtime($source) : time();
+
+            return asset($path) . "?v=" . $mtime;
+        }
+
         return asset($manifest[$path] ?? $path);
     }
 }
@@ -48,11 +56,22 @@ if (!function_exists("dusha_css_all")) {
     {
         $manifest = dusha_manifest();
 
-        $paths = collect($manifest)
-            ->keys()
-            ->filter(fn($path) => str_ends_with($path, ".css"))
-            ->sort()
-            ->all();
+        if (empty($manifest)) {
+            $sourcePath = base_path(config("dusha.source_path"));
+
+            $paths = collect(File::allFiles($sourcePath))
+                ->map(fn($file) => $file->getRelativePathname())
+                ->filter(fn($path) => str_ends_with($path, ".css"))
+                ->map(fn($path) => config("dusha.source_path") . "/" . $path)
+                ->sort()
+                ->all();
+        } else {
+            $paths = collect($manifest)
+                ->keys()
+                ->filter(fn($path) => str_ends_with($path, ".css"))
+                ->sort()
+                ->all();
+        }
 
         dusha_css($paths);
     }

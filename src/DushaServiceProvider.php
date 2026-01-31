@@ -15,6 +15,10 @@ class DushaServiceProvider extends PackageServiceProvider
             ->name("dusha")
             ->hasConfigFile()
             ->hasCommands([CompileCommand::class, ClearCommand::class]);
+
+        if (app()->environment("local")) {
+            $package->hasRoute("development");
+        }
     }
 
     public function packageRegistered()
