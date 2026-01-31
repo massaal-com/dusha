@@ -143,18 +143,30 @@ class AssetCompiler
         string $content,
     ): string {
         $hash = substr(md5($content), 0, config("dusha.digest_length"));
+        $relativePath = $this->relativePath($file);
+        $directory = dirname($relativePath);
 
         $name = str($file->getFilename())
             ->beforeLast(".")
             ->append("-", $hash, ".", $file->getExtension())
             ->toString();
 
-        File::put(
-            public_path(config("dusha.output_path")) . "/" . $name,
-            $content,
-        );
+        $outputPath = public_path(config("dusha.output_path"));
 
-        return "/" . config("dusha.output_path") . "/" . $name;
+        $fullOutputPath = $outputPath . "/" . $name;
+        if ($directory !== ".") {
+            $fullOutputPath = $outputPath . "/" . $directory . "/" . $name;
+            File::ensureDirectoryExists($outputPath . "/" . $directory);
+        }
+
+        File::put($fullOutputPath, $content);
+
+        $outputDir = config("dusha.output_path");
+        if ($directory !== ".") {
+            $resultPath = "/" . $outputDir . "/" . $directory . "/" . $name;
+        }
+
+        return "/" . $outputDir . "/" . $name;
     }
 
     protected function digest(SplFileInfo $file): string
