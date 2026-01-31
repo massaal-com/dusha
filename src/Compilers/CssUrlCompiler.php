@@ -17,19 +17,6 @@ class CssUrlCompiler extends Compiler
         );
     }
 
-    public function references(string $content, string $filePath): array
-    {
-        $directory = dirname($filePath);
-
-        preg_match_all(self::URL_PATTERN, $content, $matches);
-
-        return collect($matches[1])
-            ->map(fn($url) => $this->resolvePath($url, $directory))
-            ->filter(fn($path) => str_ends_with($path, ".css"))
-            ->values()
-            ->all();
-    }
-
     private function rewriteUrl(array $matches, string $directory): string
     {
         $resolved = $this->resolvePath($matches[1], $directory);

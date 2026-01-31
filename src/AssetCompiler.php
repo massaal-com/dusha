@@ -35,71 +35,11 @@ class AssetCompiler
 
     protected function compileCssFiles(Collection $cssFiles): Collection
     {
-        // dependency graph
-        $graph = [];
-        foreach ($cssFiles as $file) {
-            $path = $this->relativePath($file);
-            $content = File::get($file);
-            $compiler = new CssUrlCompiler(collect());
-            $graph[$path] = $compiler->references($content, $path);
-        }
+        $compiler = new CssUrlCompiler($this->manifest);
 
-        $sorted = $this->topologicalSort($graph);
-
-        $cssManifest = collect();
-        $cssByPath = $cssFiles->keyBy(fn($file) => $this->relativePath($file));
-
-        foreach ($sorted as $path) {
-            if (!isset($cssByPath[$path])) {
-                continue;
-            }
-
-            $compiler = new CssUrlCompiler(
-                $this->manifest->merge($cssManifest),
-            );
-            $hashedPath = $this->digestCss($cssByPath[$path], $compiler);
-            $cssManifest->put($path, $hashedPath);
-        }
-
-        return $cssManifest;
-    }
-
-    protected function topologicalSort(array $graph): array
-    {
-        $sorted = [];
-        $visited = [];
-        $visiting = [];
-
-        $visit = function ($node) use (
-            &$visit,
-            &$sorted,
-            &$visited,
-            &$visiting,
-            $graph,
-        ) {
-            if (isset($visited[$node])) {
-                return;
-            }
-            if (isset($visiting[$node])) {
-                throw new \RuntimeException("Circular CSS dependency: $node");
-            }
-
-            $visiting[$node] = true;
-            foreach ($graph[$node] ?? [] as $dep) {
-                if (isset($graph[$dep])) {
-                    $visit($dep);
-                }
-            }
-            unset($visiting[$node]);
-            $visited[$node] = true;
-            $sorted[] = $node;
-        };
-
-        foreach (array_keys($graph) as $node) {
-            $visit($node);
-        }
-
-        return $sorted;
+        return $cssFiles->mapWithKeys(function (SplFileInfo $file) use ($compiler) {
+            return [$this->relativePath($file) => $this->digestCss($file, $compiler)];
+        });
     }
 
     protected function ensureOutputDirectory(): void
