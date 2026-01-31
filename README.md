@@ -71,6 +71,11 @@ return [
      * Length of digest hash (default: 8)
      */
     "digest_length" => 8,
+
+    /*
+     * Rewrite relative URLs in CSS files to use hashed asset paths
+     */
+    "css_url_rewriting" => true,
 ];
 ```
 
