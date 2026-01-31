@@ -129,7 +129,7 @@ class AssetCompiler
 
         $manifest = $this->manifest->toArray();
         if (isset($manifest[$resolved_path])) {
-            return 'url("' . $this->manifest[$resolved_path] . '")';
+            return 'url("' . $manifest[$resolved_path] . '")';
         }
 
         return $matches[0];
