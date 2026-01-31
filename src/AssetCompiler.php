@@ -163,7 +163,7 @@ class AssetCompiler
 
         $outputDir = config("dusha.output_path");
         if ($directory !== ".") {
-            $resultPath = "/" . $outputDir . "/" . $directory . "/" . $name;
+            return "/" . $outputDir . "/" . $directory . "/" . $name;
         }
 
         return "/" . $outputDir . "/" . $name;
