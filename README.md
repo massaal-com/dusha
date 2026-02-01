@@ -125,7 +125,7 @@ Use the Blade components in your templates:
 <x-dusha-js src="resources/assets/js/app.js" />
 
 {{-- Load all CSS files --}}
-<x-dusha:css all />
+<x-dusha-css all />
 ```
 
 Or use the `dusha()` helper function directly:
