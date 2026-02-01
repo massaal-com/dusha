@@ -11,8 +11,8 @@
 Dusha provides simple asset management for Laravel without requiring Node.js, Webpack, or Vite. It copies your assets to the public directory with content-based hashes for cache-busting, so browsers always load the latest version after updates.
 
 ```blade
-<link rel="stylesheet" href="{{ dusha('css/app.css') }}">
-<!-- Outputs: /assets/css/app-a1b2c3d4.css -->
+<x-dusha-css src="resources/assets/css/app.css" />
+<!-- Outputs: <link rel="stylesheet" href="/assets/css/app-a1b2c3d4.css"> -->
 ```
 
 ## Installation
@@ -79,6 +79,12 @@ return [
 ];
 ```
 
+You can publish the blade components with:
+
+```bash
+php artisan vendor:publish --tag="dusha-components"
+```
+
 ## Usage
 
 ### Compiling Assets
@@ -111,15 +117,26 @@ This will:
 
 ### Including Assets in Views
 
-Use the `dusha()` helper function in your Blade templates:
+Use the Blade components in your templates:
 
 ```blade
-<link rel="stylesheet" href="{{ dusha('css/app.css') }}">
-<script src="{{ dusha('js/app.js') }}"></script>
-<img src="{{ dusha('images/logo.png') }}" alt="Logo">
+{{-- Single file --}}
+<x-dusha-css src="resources/assets/css/app.css" />
+<x-dusha-js src="resources/assets/js/app.js" />
+
+{{-- Load all CSS files --}}
+<x-dusha:css all />
 ```
 
-The helper automatically resolves the hashed filename from the manifest.
+Or use the `dusha()` helper function directly:
+
+```blade
+<link rel="stylesheet" href="{{ dusha('resources/assets/css/app.css') }}">
+<script src="{{ dusha('resources/assets/js/app.js') }}"></script>
+<img src="{{ dusha('resources/assets/images/logo.png') }}" alt="Logo">
+```
+
+The components and helper automatically resolve the hashed filename from the manifest.
 
 ### Clearing Compiled Assets
 

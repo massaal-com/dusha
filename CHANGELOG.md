@@ -13,3 +13,7 @@ All notable changes to `dusha` will be documented in this file.
 ## v0.1.2
 
 - Added support for local development without having to run dusha:compile
+
+## v0.1.3
+
+- Changed from helpers to blade components for loading CSS and JS
