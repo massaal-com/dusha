@@ -23,18 +23,18 @@ if (!function_exists("dusha")) {
     {
         $manifest = dusha_manifest();
 
-        if (!empty($manifest)) {
-            if (!isset($manifest[$path])) {
-                throw new \RuntimeException(
-                    "Asset [{$path}] not found in Dusha manifest.",
-                );
-            }
-
+        if (isset($manifest[$path])) {
             return asset($manifest[$path]);
         }
 
+        if (!empty($manifest)) {
+            throw new RuntimeException(
+                "Asset [{$path}] not found in Dusha manifest.",
+            );
+        }
+
         if (!app()->environment("local")) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Dusha manifest not found. Run "php artisan dusha:compile"',
             );
         }

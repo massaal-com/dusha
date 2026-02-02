@@ -2,14 +2,24 @@
 
 namespace Massaal\Dusha;
 
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
 use Massaal\Dusha\Compilers\CssUrlCompiler;
 use SplFileInfo;
+
+use function Illuminate\Filesystem\{join_paths};
 
 class AssetCompiler
 {
     private Collection $manifest;
+    private readonly string $sourcePath;
+    private readonly string $outputPath;
+
+    public function __construct()
+    {
+        $this->sourcePath = config("dusha.source_path");
+        $this->outputPath = config("dusha.output_path");
+    }
 
     public function compile(): int
     {
@@ -20,11 +30,11 @@ class AssetCompiler
             fn(SplFileInfo $file) => $file->getExtension() === "css",
         );
 
-        $this->manifest = $otherFiles->mapWithKeys(function (
-            SplFileInfo $file,
-        ) {
-            return [$this->relativePath($file) => $this->digest($file)];
-        });
+        $this->manifest = $otherFiles->mapWithKeys(
+            fn(SplFileInfo $file) => [
+                $this->relativePath($file) => $this->digest($file),
+            ],
+        );
 
         $cssManifest = $this->compileCssFiles($cssFiles);
 
@@ -37,32 +47,33 @@ class AssetCompiler
     {
         $compiler = new CssUrlCompiler($this->manifest);
 
-        return $cssFiles->mapWithKeys(function (SplFileInfo $file) use ($compiler) {
-            return [$this->relativePath($file) => $this->digestCss($file, $compiler)];
+        return $cssFiles->mapWithKeys(function (SplFileInfo $file) use (
+            $compiler,
+        ) {
+            return [
+                $this->relativePath($file) => $this->digestCss(
+                    $file,
+                    $compiler,
+                ),
+            ];
         });
     }
 
     protected function ensureOutputDirectory(): void
     {
-        File::ensureDirectoryExists(public_path(config("dusha.output_path")));
-        File::cleanDirectory(public_path(config("dusha.output_path")));
+        File::ensureDirectoryExists(public_path($this->outputPath));
+        File::cleanDirectory(public_path($this->outputPath));
     }
 
     protected function getAssetFiles(): Collection
     {
-        $sourcePath = config("dusha.source_path");
         $paths = config("dusha.paths");
         $extensions = config("dusha.extensions");
 
         return collect($paths)
-            ->filter(
-                fn(string $path) => File::isDirectory(
-                    $sourcePath . "/" . $path,
-                ),
-            )
-            ->flatMap(
-                fn(string $path) => File::allFiles($sourcePath . "/" . $path),
-            )
+            ->map(fn(string $path) => join_paths($this->sourcePath, $path))
+            ->filter(fn(string $path) => File::isDirectory($path))
+            ->flatMap(fn(string $path) => File::allFiles($path))
             ->filter(
                 fn(SplFileInfo $file) => in_array(
                     $file->getExtension(),
@@ -74,7 +85,7 @@ class AssetCompiler
     protected function relativePath(SplFileInfo $file): string
     {
         return str($file->getPathname())
-            ->after(config("dusha.source_path") . "/")
+            ->after("$this->sourcePath/")
             ->toString();
     }
 
@@ -91,22 +102,24 @@ class AssetCompiler
             ->append("-", $hash, ".", $file->getExtension())
             ->toString();
 
-        $outputPath = public_path(config("dusha.output_path"));
+        $outputPath = public_path($this->outputPath);
 
-        $fullOutputPath = $outputPath . "/" . $name;
         if ($directory !== ".") {
-            $fullOutputPath = $outputPath . "/" . $directory . "/" . $name;
-            File::ensureDirectoryExists($outputPath . "/" . $directory);
+            $fullOutputPath = join_paths($outputPath, $directory, $name);
+            File::ensureDirectoryExists(join_paths($outputPath, $directory));
+        } else {
+            $fullOutputPath = join_paths($outputPath, $name);
         }
 
         File::put($fullOutputPath, $content);
 
-        $outputDir = config("dusha.output_path");
+        $urlBase = "/$this->outputPath";
+
         if ($directory !== ".") {
-            return "/" . $outputDir . "/" . $directory . "/" . $name;
+            return join_paths($urlBase, $directory, $name);
         }
 
-        return "/" . $outputDir . "/" . $name;
+        return join_paths($urlBase, $name);
     }
 
     protected function digest(SplFileInfo $file): string
@@ -131,9 +144,11 @@ class AssetCompiler
     {
         $this->manifest = $this->manifest->merge($cssManifest);
 
-        File::put(
-            public_path(config("dusha.output_path")) . "/.manifest.json",
-            $this->manifest->toPrettyJson(),
+        $manifestPath = join_paths(
+            public_path($this->outputPath),
+            ".manifest.json",
         );
+
+        File::put($manifestPath, $this->manifest->toPrettyJson());
     }
 }
