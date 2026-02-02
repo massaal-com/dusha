@@ -31,7 +31,6 @@ return [
         "woff",
         "woff2",
         "ttf",
-        "eot",
         "otf",
     ],
 

@@ -13,11 +13,7 @@ trait BuildsHtmlAttributes
                     return $key;
                 }
 
-                return \sprintf(
-                    '%s="%s"',
-                    $key,
-                    htmlentities($value, ENT_QUOTES),
-                );
+                return \sprintf('%s="%s"', $key, e($value));
             })
             ->implode(" ");
     }

@@ -24,7 +24,13 @@ if (!function_exists("dusha")) {
         $manifest = dusha_manifest();
 
         if (!empty($manifest)) {
-            return asset($manifest[$path] ?? $path);
+            if (!isset($manifest[$path])) {
+                throw new \RuntimeException(
+                    "Asset [{$path}] not found in Dusha manifest.",
+                );
+            }
+
+            return asset($manifest[$path]);
         }
 
         if (!app()->environment("local")) {
