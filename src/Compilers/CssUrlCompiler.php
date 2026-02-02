@@ -2,8 +2,12 @@
 
 namespace Massaal\Dusha\Compilers;
 
+use Illuminate\Support\Collection;
+
 class CssUrlCompiler extends Compiler
 {
+    public function __construct(protected Collection $manifest) {}
+
     private const string URL_PATTERN = '/url\(\s*["\']?(?!(?:data:|https?:|\/\/|\/))([^"\')\s]+)["\']?\s*\)/i';
 
     public function compile(string $content, string $filePath): string

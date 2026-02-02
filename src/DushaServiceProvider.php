@@ -25,10 +25,8 @@ class DushaServiceProvider extends PackageServiceProvider
         }
     }
 
-    public function packageRegistered()
+    public function packageRegistered(): void
     {
-        require_once __DIR__ . "/helpers.php";
-
         $this->app->singleton(AssetCompiler::class);
     }
 }

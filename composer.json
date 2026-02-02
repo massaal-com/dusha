@@ -35,9 +35,11 @@
     },
     "autoload": {
         "psr-4": {
-            "Massaal\\Dusha\\": "src/",
-            "Massaal\\Dusha\\Database\\Factories\\": "database/factories/"
-        }
+            "Massaal\\Dusha\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -64,10 +66,7 @@
         "laravel": {
             "providers": [
                 "Massaal\\Dusha\\DushaServiceProvider"
-            ],
-            "aliases": {
-                "Dusha": "Massaal\\Dusha\\Facades\\Dusha"
-            }
+            ]
         }
     },
     "minimum-stability": "dev",

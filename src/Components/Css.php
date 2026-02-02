@@ -14,7 +14,7 @@ class Css extends Component
 
     public function __construct(
         public ?string $src = null,
-        public ?bool $all = null,
+        public bool $all = false,
     ) {}
 
     public function render(): HtmlString
