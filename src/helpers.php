@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\File;
+use Massaal\Dusha\AssetNotFoundException;
+use Massaal\Dusha\ManifestNotFoundException;
 
 if (!function_exists("dusha_manifest")) {
     function dusha_manifest(): array
@@ -28,13 +30,13 @@ if (!function_exists("dusha")) {
         }
 
         if (!empty($manifest)) {
-            throw new RuntimeException(
+            throw new AssetNotFoundException(
                 "Asset [{$path}] not found in Dusha manifest.",
             );
         }
 
         if (!app()->environment("local")) {
-            throw new RuntimeException(
+            throw new ManifestNotFoundException(
                 'Dusha manifest not found. Run "php artisan dusha:compile"',
             );
         }
