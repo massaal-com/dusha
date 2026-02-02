@@ -17,3 +17,7 @@ All notable changes to `dusha` will be documented in this file.
 ## v0.1.3
 
 - Changed from helpers to blade components for loading CSS and JS
+
+## v0.1.4
+
+- Cleaned up code and fixed fragile path building
