@@ -48,7 +48,7 @@ class Css extends Component
             $paths = collect(File::allFiles($sourcePath))
                 ->map(fn($file) => $file->getRelativePathname())
                 ->filter(fn($path) => str_ends_with($path, ".css"))
-                ->map(fn($path) => config("dusha.source_path") . "/" . $path)
+                ->map(fn($path) => $path)
                 ->sort();
         } else {
             $paths = collect($manifest)

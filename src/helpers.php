@@ -44,6 +44,8 @@ if (!function_exists("dusha")) {
         $source = base_path($path);
         $mtime = file_exists($source) ? filemtime($source) : time();
 
+        $path = config("dusha.source_path") . "/" . $path;
+
         return asset($path) . "?v=" . $mtime;
     }
 }
